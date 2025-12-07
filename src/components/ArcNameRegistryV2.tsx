@@ -7,7 +7,7 @@ interface ArcNameRegistryV2Props {
   account: string | null;
 }
 
-const REGISTRY_ADDRESS = import.meta.env.VITE_REGISTRY_ADDRESS || '0x7b08A2A0CE6BC1f4D325529aBf26E0A6Bc83dBff';
+const REGISTRY_ADDRESS = import.meta.env.VITE_REGISTRY_ADDRESS || '0x7F0768f96b2bc1CE19ED27D14c664078BBde3f19';
 
 export function ArcNameRegistryV2({ signer }: ArcNameRegistryV2Props) {
   const [searchName, setSearchName] = useState('');
