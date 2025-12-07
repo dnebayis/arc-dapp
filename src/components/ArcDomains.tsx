@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import Web3 from 'web3'
-import ArcRegistryAbi from '../contracts/ArcNameRegistryV2.json'
+import ArcRegistryAbi from '../contracts/ArcNameRegistryV3.json'
 import { namehash } from 'viem'
 
 interface Props {
@@ -8,16 +8,14 @@ interface Props {
 }
 
 export default function ArcDomains({ account }: Props) {
-  const [registryAddress, setRegistryAddress] = useState('')
+  const registryAddress: string = (import.meta as any).env?.VITE_REGISTRY_ADDRESS || ''
   const [label, setLabel] = useState('')
   const [node, setNode] = useState<string>('')
   const [checking, setChecking] = useState(false)
   const [available, setAvailable] = useState<boolean | null>(null)
-  const [addr, setAddr] = useState('')
-  const [textKey, setTextKey] = useState('profile')
-  const [textValue, setTextValue] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [owner, setOwner] = useState<string>('')
 
   const web3 = useMemo(() => (window.ethereum ? new Web3(window.ethereum) : null), []) as any
   const contract = useMemo(() => {
@@ -36,8 +34,10 @@ export default function ArcDomains({ account }: Props) {
     setError(null)
     setSuccess(null)
     try {
-      const owner = await contract.methods.owners(node).call()
-      setAvailable(owner === '0x0000000000000000000000000000000000000000')
+      const o = await contract.methods.owners(node).call()
+      setOwner(o)
+      const isAvail = o === '0x0000000000000000000000000000000000000000'
+      setAvailable(isAvail)
     } catch (e: any) {
       setError(e.message || 'Failed to check')
     } finally {
@@ -50,52 +50,21 @@ export default function ArcDomains({ account }: Props) {
     setError(null)
     setSuccess(null)
     try {
-      await contract.methods.register(node).send({ from: account })
+      const gas = await contract.methods.register(node).estimateGas({ from: account })
+      await contract.methods.register(node).send({ from: account, gas })
       setSuccess('Registered')
-      checkAvailability()
+      await checkAvailability()
     } catch (e: any) {
       setError(e.message || 'Registration failed')
     }
   }
 
-  const saveAddr = async () => {
-    if (!account || !contract || !node || !web3.utils.isAddress(addr)) return
-    setError(null)
-    setSuccess(null)
-    try {
-      await contract.methods.setAddr(node, addr).send({ from: account })
-      setSuccess('Address saved')
-    } catch (e: any) {
-      setError(e.message || 'Failed to save address')
-    }
-  }
-
-  const saveText = async () => {
-    if (!account || !contract || !node || !textKey) return
-    setError(null)
-    setSuccess(null)
-    try {
-      await contract.methods.setText(node, textKey, textValue).send({ from: account })
-      setSuccess('Text record saved')
-    } catch (e: any) {
-      setError(e.message || 'Failed to save text')
-    }
-  }
+  
 
   return (
     <div className="card">
       <h2>◈ Arc Domains</h2>
-
-      <div className="input-group">
-        <label>Registry Address</label>
-        <input
-          type="text"
-          value={registryAddress}
-          onChange={(e) => setRegistryAddress(e.target.value)}
-          placeholder="0x..."
-          className="input-field"
-        />
-      </div>
+      
 
       <div className="input-group">
         <label>Label</label>
@@ -120,6 +89,9 @@ export default function ArcDomains({ account }: Props) {
       {available !== null && (
         <div className="info-box" style={{ marginTop: '1rem' }}>
           <p>{label ? `${label}.arc` : ''} {available ? 'is available' : 'is taken'}</p>
+          {!available && owner && (
+            <p>Owner: <code>{owner}</code></p>
+          )}
         </div>
       )}
 
@@ -129,38 +101,7 @@ export default function ArcDomains({ account }: Props) {
         </button>
       </div>
 
-      <div className="input-group" style={{ marginTop: '1rem' }}>
-        <label>Address Record</label>
-        <input
-          type="text"
-          value={addr}
-          onChange={(e) => setAddr(e.target.value)}
-          placeholder="0x..."
-          className="input-field"
-        />
-      </div>
-      <button onClick={saveAddr} disabled={!account || !contract || !node || !addr} className="action-button">Save Address</button>
-
-      <div className="input-group" style={{ marginTop: '1rem' }}>
-        <label>Text Record</label>
-        <input
-          type="text"
-          value={textKey}
-          onChange={(e) => setTextKey(e.target.value)}
-          placeholder="key"
-          className="input-field"
-        />
-      </div>
-      <div className="input-group">
-        <input
-          type="text"
-          value={textValue}
-          onChange={(e) => setTextValue(e.target.value)}
-          placeholder="value"
-          className="input-field"
-        />
-      </div>
-      <button onClick={saveText} disabled={!account || !contract || !node || !textKey} className="action-button">Save Text</button>
+      
 
       {error && <div className="error-message">{error}</div>}
       {success && (
