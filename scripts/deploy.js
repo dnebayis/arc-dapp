@@ -1,9 +1,9 @@
 /**
- * ARC Name Registry Deployment Script
+ * ARC Name Registry V2 Deployment Script
  * 
  * Usage: node scripts/deploy.js
  * 
- * This script deploys the ArcNameRegistry contract to ARC Testnet
+ * This script deploys the ArcNameRegistryV2 contract to ARC Testnet
  */
 
 import Web3 from 'web3';
@@ -57,11 +57,11 @@ async function deploy() {
   }
   
   // Read ABI
-  const abiPath = join(__dirname, '..', 'src', 'contracts', 'ArcNameRegistry.json');
+  const abiPath = join(__dirname, '..', 'src', 'contracts', 'ArcNameRegistryV2.json');
   const artifact = JSON.parse(fs.readFileSync(abiPath, 'utf8'));
   
   console.log('\n📋 Contract Info:');
-  console.log('   Name: ArcNameRegistry');
+  console.log('   Name: ArcNameRegistryV2');
   console.log('   Network: ARC Network Testnet');
   console.log('   Chain ID:', CHAIN_ID);
   

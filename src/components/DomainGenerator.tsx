@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import Web3 from 'web3';
-import ArcNameRegistryArtifact from '../contracts/ArcNameRegistry.json';
+import ArcNameRegistryV2Artifact from '../contracts/ArcNameRegistryV2.json';
 
 interface DomainGeneratorProps {
   signer: any;
@@ -111,7 +111,7 @@ export function DomainGenerator({ signer }: DomainGeneratorProps) {
     if (!window.ethereum || !REGISTRY_ADDRESS) return;
 
     const web3 = new Web3(window.ethereum);
-    const contract = new web3.eth.Contract(ArcNameRegistryArtifact.abi as any, REGISTRY_ADDRESS);
+    const contract = new web3.eth.Contract(ArcNameRegistryV2Artifact.abi as any, REGISTRY_ADDRESS);
 
     // Mark all as checking
     setSuggestions(prev => prev.map(d => ({ ...d, checking: true })));
@@ -146,7 +146,7 @@ export function DomainGenerator({ signer }: DomainGeneratorProps) {
 
     try {
       const web3 = new Web3(window.ethereum);
-      const contract = new web3.eth.Contract(ArcNameRegistryArtifact.abi as any, REGISTRY_ADDRESS);
+      const contract = new web3.eth.Contract(ArcNameRegistryV2Artifact.abi as any, REGISTRY_ADDRESS);
 
       const fee = await contract.methods.registrationFee().call();
 

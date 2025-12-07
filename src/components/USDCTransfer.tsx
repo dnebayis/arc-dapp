@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Web3 from 'web3';
-import ArcNameRegistryArtifact from '../contracts/ArcNameRegistry.json';
+import ArcNameRegistryV2Artifact from '../contracts/ArcNameRegistryV2.json';
 
 interface USDCTransferProps {
   signer: any;
@@ -87,7 +87,7 @@ export function USDCTransfer({ signer, account }: USDCTransferProps) {
       setResolving(true);
       try {
         const web3 = new Web3(window.ethereum);
-        const contract = new web3.eth.Contract(ArcNameRegistryArtifact.abi as any, REGISTRY_ADDRESS);
+        const contract = new web3.eth.Contract(ArcNameRegistryV2Artifact.abi as any, REGISTRY_ADDRESS);
         
         const name = input.toLowerCase().replace('.arc', '');
         const address = await contract.methods.resolve(name).call();
