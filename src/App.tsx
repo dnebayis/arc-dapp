@@ -22,6 +22,9 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState<'home' | 'deploy' | 'transfer' | 'history' | 'domains' | 'domainsPro'>('home');
   const [networkAddFailed, setNetworkAddFailed] = useState(false)
   const { switchChain } = useSwitchChain()
+  const dappUrl = typeof window !== 'undefined' ? window.location.href : ''
+  const metamaskDeepLink = dappUrl ? `https://metamask.app.link/dapp/${encodeURIComponent(dappUrl)}` : ''
+  const metamaskAddNetworkLink = `https://metamask.app.link/addNetwork?rpcUrl=${encodeURIComponent('https://rpc.testnet.arc.network')}&chainId=5042002&chainName=${encodeURIComponent('Arc Network Testnet')}&symbol=${encodeURIComponent('USDC')}&blockExplorerUrl=${encodeURIComponent('https://testnet.arcscan.app')}`
 
   const addArcNetwork = async () => {
     try {
@@ -83,6 +86,12 @@ function AppContent() {
               <li>Currency: <code>USDC</code></li>
               <li>Explorer: <a href="https://testnet.arcscan.app" target="_blank" rel="noopener noreferrer">https://testnet.arcscan.app</a></li>
             </ul>
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+              {metamaskDeepLink && (
+                <a href={metamaskDeepLink} target="_blank" rel="noopener noreferrer" className="faucet-link">Open in MetaMask</a>
+              )}
+              <a href={metamaskAddNetworkLink} target="_blank" rel="noopener noreferrer" className="faucet-link">MetaMask Add Network</a>
+            </div>
           </div>
         )}
         {!isConnected ? (
