@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import Web3 from 'web3';
-import ArcNameRegistryV2Artifact from '../contracts/ArcNameRegistryV2.json';
 
 interface USDCTransferProps {
   signer: any;
@@ -9,8 +8,6 @@ interface USDCTransferProps {
 
 // EURC is an ERC20 token on ARC Network
 const EURC_ADDRESS = '0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a';
-// ARC Name Registry V2 Contract Address
-const REGISTRY_ADDRESS = '0x7b08A2A0CE6BC1f4D325529aBf26E0A6Bc83dBff';
 
 const ERC20_ABI = [
   {
@@ -48,8 +45,6 @@ export function USDCTransfer({ signer, account }: USDCTransferProps) {
   const [usdcBalance, setUsdcBalance] = useState<string>('0');
   const [eurcBalance, setEurcBalance] = useState<string>('0');
   const [selectedToken, setSelectedToken] = useState<'USDC' | 'EURC'>('USDC');
-  const [resolvedAddress, setResolvedAddress] = useState<string>('');
-  const [resolving, setResolving] = useState(false);
 
   // Load balances when component mounts or account changes
   const loadBalances = async () => {
@@ -79,53 +74,10 @@ export function USDCTransfer({ signer, account }: USDCTransferProps) {
     loadBalances();
   }, [account]);
 
-  // Resolve .arc names to addresses
-  const resolveRecipient = async (input: string): Promise<string> => {
-    if (!input) return '';
-
-    // Check if input ends with .arc
-    if (input.toLowerCase().endsWith('.arc') && REGISTRY_ADDRESS) {
-      setResolving(true);
-      try {
-        const web3 = new Web3(window.ethereum);
-        const contract = new web3.eth.Contract(ArcNameRegistryV2Artifact.abi as any, REGISTRY_ADDRESS);
-        
-        const name = input.toLowerCase().replace('.arc', '');
-        const address = await contract.methods.resolve(name).call();
-        const resolvedAddr = String(address || '');
-        
-        if (resolvedAddr === '0x0000000000000000000000000000000000000000' || !resolvedAddr) {
-          throw new Error('Name not registered');
-        }
-        
-        setResolvedAddress(resolvedAddr);
-        setResolving(false);
-        return resolvedAddr;
-      } catch (err) {
-        setResolving(false);
-        throw new Error('Failed to resolve .arc name');
-      }
-    }
-    
-    // Otherwise, treat as regular address
-    setResolvedAddress('');
-    return input;
-  };
-
   // Handle recipient input change
-  const handleRecipientChange = async (value: string) => {
+  const handleRecipientChange = (value: string) => {
     setRecipient(value);
     setError(null);
-    
-    if (value.toLowerCase().endsWith('.arc')) {
-      try {
-        await resolveRecipient(value);
-      } catch (err: any) {
-        setError(err.message);
-      }
-    } else {
-      setResolvedAddress('');
-    }
   };
 
   const sendToken = async () => {
@@ -136,16 +88,7 @@ export function USDCTransfer({ signer, account }: USDCTransferProps) {
 
     const web3 = new Web3(window.ethereum);
     
-    // Resolve recipient (handles both .arc names and addresses)
-    let finalRecipient: string;
-    try {
-      finalRecipient = await resolveRecipient(recipient);
-    } catch (err: any) {
-      setError(err.message || 'Invalid recipient');
-      return;
-    }
-    
-    if (!web3.utils.isAddress(finalRecipient)) {
+    if (!web3.utils.isAddress(recipient)) {
       setError('Invalid recipient address');
       return;
     }
@@ -182,7 +125,7 @@ export function USDCTransfer({ signer, account }: USDCTransferProps) {
         
         const receipt = await web3.eth.sendTransaction({
           from: signer,
-          to: finalRecipient,
+          to: recipient,
           value: amountInWei
         });
         
@@ -192,7 +135,7 @@ export function USDCTransfer({ signer, account }: USDCTransferProps) {
         const eurcContract = new web3.eth.Contract(ERC20_ABI, EURC_ADDRESS);
         const amountWithDecimals = Math.floor(parseFloat(amount) * 1e6).toString();
         
-        const receipt = await eurcContract.methods.transfer(finalRecipient, amountWithDecimals).send({
+        const receipt = await eurcContract.methods.transfer(recipient, amountWithDecimals).send({
           from: signer
         });
         
@@ -255,24 +198,14 @@ export function USDCTransfer({ signer, account }: USDCTransferProps) {
       </div>
       
       <div className="input-group">
-        <label>Recipient Address or .arc Name:</label>
+        <label>Recipient Address:</label>
         <input
           type="text"
           value={recipient}
           onChange={(e) => handleRecipientChange(e.target.value)}
-          placeholder="0x... or username.arc"
+          placeholder="0x..."
           className="input-field"
         />
-        {resolving && (
-          <small style={{ display: 'block', marginTop: '0.5rem', color: 'var(--text-secondary)' }}>
-            Resolving .arc name...
-          </small>
-        )}
-        {resolvedAddress && (
-          <small style={{ display: 'block', marginTop: '0.5rem', color: 'var(--success)' }}>
-            ✓ Resolves to: {resolvedAddress.slice(0, 6)}...{resolvedAddress.slice(-4)}
-          </small>
-        )}
       </div>
 
       <div className="input-group">

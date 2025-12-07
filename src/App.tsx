@@ -7,7 +7,6 @@ import { ContractDeploy } from './components/ContractDeploy';
 import { USDCTransfer } from './components/USDCTransfer';
 import { TransactionHistory } from './components/TransactionHistory';
 import { NetworkStatus } from './components/NetworkStatus';
-import { ArcNameRegistryV2 } from './components/ArcNameRegistryV2';
 import arcLogo from './assets/arc-logo.svg'
 import '@rainbow-me/rainbowkit/styles.css'
 import './App.css'
@@ -16,7 +15,7 @@ const queryClient = new QueryClient()
 
 function AppContent() {
   const { address, isConnected } = useAccount()
-  const [activeTab, setActiveTab] = useState<'home' | 'deploy' | 'transfer' | 'history' | 'registry'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'deploy' | 'transfer' | 'history'>('home');
 
   return (
     <div className="app">
@@ -67,10 +66,6 @@ function AppContent() {
                       <span className="feature-icon">⚡︎</span>
                       <span className="feature-text">Sub-Second Finality</span>
                     </div>
-                    <div className="feature-card">
-                      <span className="feature-icon">🏷</span>
-                      <span className="feature-text">Name Registry</span>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -109,13 +104,6 @@ function AppContent() {
                   <span className="nav-icon">⋮</span>
                   <span className="nav-label">Transactions</span>
                 </button>
-                <button 
-                  className={`nav-item ${activeTab === 'registry' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('registry')}
-                >
-                  <span className="nav-icon">🏷</span>
-                  <span className="nav-label">Name Registry</span>
-                </button>
               </nav>
             </aside>
 
@@ -145,11 +133,7 @@ function AppContent() {
                 </div>
               )}
 
-              {activeTab === 'registry' && (
-                <div className="single-view">
-                  <ArcNameRegistryV2 signer={address || null} account={address || null} />
-                </div>
-              )}
+
             </div>
           </div>
         )}
