@@ -53,6 +53,14 @@ export default function ArcDomains({ account }: Props) {
       const gas = await contract.methods.register(node).estimateGas({ from: account })
       await contract.methods.register(node).send({ from: account, gas })
       setSuccess('Registered')
+      try {
+        if (label) {
+          const gasLabel = await contract.methods.setText(node, 'label', label).estimateGas({ from: account })
+          await contract.methods.setText(node, 'label', label).send({ from: account, gas: gasLabel })
+        }
+      } catch (e: any) {
+        console.error(e)
+      }
       await checkAvailability()
     } catch (e: any) {
       setError(e.message || 'Registration failed')

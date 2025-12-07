@@ -6,11 +6,19 @@ import { ethers } from 'ethers'
 dotenv.config()
 
 async function main() {
-  const rpcUrl = process.env.ARC_TESTNET_RPC_URL || 'https://rpc.testnet.arc.network'
+  const primaryUrl = process.env.ARC_TESTNET_RPC_URL || 'https://rpc.testnet.arc.network'
+  const fallbackUrl = process.env.ARC_TESTNET_RPC_FALLBACK_URL || 'https://arc-testnet.drpc.org'
   const pk = process.env.PRIVATE_KEY || process.env.DEPLOYER_PRIVATE_KEY
   if (!pk) throw new Error('PRIVATE_KEY missing')
 
-  const provider = new ethers.JsonRpcProvider(rpcUrl)
+  let provider = new ethers.JsonRpcProvider(primaryUrl)
+  try {
+    await provider.send('eth_chainId', [])
+  } catch (e) {
+    console.warn('Primary RPC failed, switching to fallback:', e?.message || e)
+    provider = new ethers.JsonRpcProvider(fallbackUrl)
+    await provider.send('eth_chainId', [])
+  }
   const wallet = new ethers.Wallet(pk, provider)
 
   const bytecodePath = path.join(process.cwd(), 'scripts', 'bytecode.txt')
@@ -22,6 +30,7 @@ async function main() {
   const feeData = await provider.getFeeData()
   const gasPrice = feeData.gasPrice || 0n
 
+  console.log('RPC URL:', (provider).connection?.url || primaryUrl)
   console.log('Deployer address:', wallet.address)
   console.log('Balance (base units):', balance.toString())
   console.log('Gas price (base units):', gasPrice.toString())

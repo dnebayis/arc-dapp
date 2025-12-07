@@ -8,6 +8,7 @@ import { USDCTransfer } from './components/USDCTransfer';
 import { TransactionHistory } from './components/TransactionHistory';
 import { NetworkStatus } from './components/NetworkStatus';
 import ArcDomains from './components/ArcDomains';
+import ArcDomainsPro from './components/ArcDomainsPro';
 import arcLogo from './assets/arc-logo.svg'
 import { ARC_TESTNET } from './config/index'
 import '@rainbow-me/rainbowkit/styles.css'
@@ -17,7 +18,7 @@ const queryClient = new QueryClient()
 
 function AppContent() {
   const { address, isConnected } = useAccount()
-  const [activeTab, setActiveTab] = useState<'home' | 'deploy' | 'transfer' | 'history' | 'domains'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'deploy' | 'transfer' | 'history' | 'domains' | 'domainsPro'>('home');
 
   const addArcNetwork = async () => {
     try {
@@ -125,13 +126,20 @@ function AppContent() {
                   <span className="nav-icon">⋮</span>
                   <span className="nav-label">Transactions</span>
                 </button>
-                <button 
-                  className={`nav-item ${activeTab === 'domains' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('domains')}
-                >
-                  <span className="nav-icon">◈</span>
-                  <span className="nav-label">Domains</span>
-                </button>
+              <button 
+                className={`nav-item ${activeTab === 'domains' ? 'active' : ''}`}
+                onClick={() => setActiveTab('domains')}
+              >
+                <span className="nav-icon">◈</span>
+                <span className="nav-label">Domains</span>
+              </button>
+              <button 
+                className={`nav-item ${activeTab === 'domainsPro' ? 'active' : ''}`}
+                onClick={() => setActiveTab('domainsPro')}
+              >
+                <span className="nav-icon">◇</span>
+                <span className="nav-label">Domains Pro</span>
+              </button>
               </nav>
             </aside>
 
@@ -164,6 +172,12 @@ function AppContent() {
               {activeTab === 'domains' && (
                 <div className="single-view">
                   <ArcDomains account={address || null} />
+                </div>
+              )}
+
+              {activeTab === 'domainsPro' && (
+                <div className="single-view">
+                  <ArcDomainsPro account={address || null} />
                 </div>
               )}
 
