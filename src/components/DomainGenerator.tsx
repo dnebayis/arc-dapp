@@ -33,7 +33,7 @@ const WORD_LISTS = {
   ]
 };
 
-export function DomainGenerator({ signer, account }: DomainGeneratorProps) {
+export function DomainGenerator({ signer }: DomainGeneratorProps) {
   const [suggestions, setSuggestions] = useState<DomainSuggestion[]>([]);
   const [generating, setGenerating] = useState(false);
   const [keyword, setKeyword] = useState('');

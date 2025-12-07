@@ -8,21 +8,12 @@ interface ArcNameRegistryV2Props {
 }
 
 const REGISTRY_ADDRESS = import.meta.env.VITE_REGISTRY_ADDRESS || '';
-const ARCSCAN_API_KEY = 'cfb394f7-0a49-4202-9986-c6f52ebe0744';
 
-interface OwnedName {
-  node: string;
-  name: string;
-  registrationTime: number;
-}
-
-export function ArcNameRegistryV2({ signer, account }: ArcNameRegistryV2Props) {
+export function ArcNameRegistryV2({ signer }: ArcNameRegistryV2Props) {
   const [searchName, setSearchName] = useState('');
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
-  const [myNames, setMyNames] = useState<OwnedName[]>([]);
   const [registering, setRegistering] = useState(false);
   const [checking, setChecking] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [registrationFee, setRegistrationFee] = useState<string>('0.1');
@@ -57,134 +48,6 @@ export function ArcNameRegistryV2({ signer, account }: ArcNameRegistryV2Props) {
   const [nameCache, setNameCache] = useState<Map<string, string>>(loadNameCache());
 
   // Calculate namehash (ENS-compatible)
-  const namehash = (name: string): string => {
-    const web3 = new Web3();
-    let node = '0x0000000000000000000000000000000000000000000000000000000000000000';
-    
-    // Hash .arc TLD
-    const arcLabel = web3.utils.keccak256('arc');
-    node = web3.utils.keccak256(web3.eth.abi.encodeParameters(['bytes32', 'bytes32'], [node, arcLabel]));
-    
-    // Hash the name
-    if (name) {
-      const nameLabel = web3.utils.keccak256(name);
-      node = web3.utils.keccak256(web3.eth.abi.encodeParameters(['bytes32', 'bytes32'], [node, nameLabel]));
-    }
-    
-    return node;
-  };
-
-  // Load all names owned by user
-  const loadMyNames = async () => {
-    if (!account || !REGISTRY_ADDRESS) return;
-    
-    setLoading(true);
-    try {
-      const web3 = new Web3(window.ethereum);
-      const contract = new web3.eth.Contract(ArcNameRegistryV2Artifact.abi as any, REGISTRY_ADDRESS);
-      
-      // Get all owned name nodes
-      const ownedNodes = await contract.methods.getOwnedNames(account).call();
-      const ownedNodesArray = Array.isArray(ownedNodes) ? ownedNodes : [];
-      
-      // Query NameRegistered events for this account to get actual names
-      const namesWithDetails: OwnedName[] = [];
-      
-      try {
-        // Get all NameRegistered events where the owner is the current account
-        const eventSignature = web3.utils.sha3('NameRegistered(string,bytes32,address,uint256)');
-        const paddedAddress = web3.utils.padLeft(account.toLowerCase(), 64);
-        
-        const eventUrl = `https://testnet.arcscan.app/api?module=logs&action=getLogs&address=${REGISTRY_ADDRESS}&topic0=${eventSignature}&topic2=${paddedAddress}&apikey=${ARCSCAN_API_KEY}`;
-        
-        console.log('Fetching events from:', eventUrl);
-        
-        const response = await fetch(eventUrl);
-        const data = await response.json();
-        
-        console.log('ArcScan response:', data);
-        
-        const newCache = new Map<string, string>();
-        
-        if (data.status === '1' && data.result && Array.isArray(data.result)) {
-          console.log('Found', data.result.length, 'registration events');
-          
-          // Build a map of node -> name from events
-          for (const log of data.result) {
-            try {
-              console.log('Processing log:', log);
-              
-              // The event signature is: NameRegistered(string name, bytes32 indexed node, address indexed owner, uint256 timestamp)
-              // Non-indexed params go in data: string name, uint256 timestamp
-              const decodedData = web3.eth.abi.decodeParameters(
-                ['string', 'uint256'],
-                log.data
-              );
-              
-              const name = String(decodedData[0]);
-              const node = String(log.topics[1]); // Node is indexed (topic1)
-              
-              console.log('Decoded:', { name, node });
-              
-              newCache.set(node.toLowerCase(), name);
-            } catch (decodeErr) {
-              console.error('Failed to decode event:', decodeErr, log);
-            }
-          }
-        } else {
-          console.warn('No events found or API error:', data);
-        }
-        
-        setNameCache(newCache);
-        saveNameCache(newCache); // Persist to localStorage
-        
-        // Now match owned nodes with cached names
-        for (const node of ownedNodesArray) {
-          try {
-            const nodeStr = String(node).toLowerCase();
-            const registrationTime = await contract.methods.registrationTime(nodeStr).call();
-            const name = newCache.get(nodeStr) || 'unknown';
-            
-            namesWithDetails.push({
-              node: nodeStr,
-              name: name,
-              registrationTime: Number(registrationTime || 0)
-            });
-          } catch (err) {
-            console.error('Failed to load name details:', err);
-          }
-        }
-      } catch (apiErr) {
-        console.error('Failed to fetch events from ArcScan:', apiErr);
-        
-        // Fallback: Use cached names or show as unknown
-        for (const node of ownedNodesArray) {
-          const nodeStr = String(node).toLowerCase();
-          const registrationTime = await contract.methods.registrationTime(nodeStr).call();
-          const name = nameCache.get(nodeStr) || 'unknown';
-          
-          namesWithDetails.push({
-            node: nodeStr,
-            name: name,
-            registrationTime: Number(registrationTime || 0)
-          });
-        }
-      }
-      
-      setMyNames(namesWithDetails);
-      
-      // Get registration fee
-      const fee = await contract.methods.registrationFee().call();
-      const feeInUsdc = web3.utils.fromWei(String(fee || '0'), 'ether');
-      setRegistrationFee(feeInUsdc);
-    } catch (err) {
-      console.error('Failed to load names:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Check name availability
   const checkAvailability = async () => {
     if (!searchName || !REGISTRY_ADDRESS) {
       setError('Please enter a name to check');
@@ -233,18 +96,14 @@ export function ArcNameRegistryV2({ signer, account }: ArcNameRegistryV2Props) {
       });
 
       // Cache the name immediately in memory and localStorage
-      const node = namehash(searchName.toLowerCase());
       const updatedCache = new Map(nameCache);
-      updatedCache.set(node.toLowerCase(), searchName.toLowerCase());
+      updatedCache.set(searchName.toLowerCase(), searchName.toLowerCase());
       setNameCache(updatedCache);
       saveNameCache(updatedCache);
 
       setSuccess(`Successfully registered ${searchName.toLowerCase()}.arc!`);
       setSearchName('');
       setIsAvailable(null);
-      
-      // Reload owned names
-      setTimeout(() => loadMyNames(), 2000);
     } catch (err: any) {
       setError(err.message || 'Registration failed');
       console.error('Registration error:', err);
@@ -253,36 +112,22 @@ export function ArcNameRegistryV2({ signer, account }: ArcNameRegistryV2Props) {
     }
   };
 
-  // Release a name
-  const releaseName = async (node: string, name: string) => {
-    if (!signer || !window.ethereum || !REGISTRY_ADDRESS) return;
-
-    const confirmed = window.confirm(`Are you sure you want to release ${name}.arc? This cannot be undone.`);
-    if (!confirmed) return;
-
-    try {
-      const web3 = new Web3(window.ethereum);
-      const contract = new web3.eth.Contract(ArcNameRegistryV2Artifact.abi as any, REGISTRY_ADDRESS);
-
-      await contract.methods.release(node).send({
-        from: signer
-      });
-
-      setSuccess(`Successfully released ${name}.arc`);
-      
-      // Reload owned names
-      setTimeout(() => loadMyNames(), 2000);
-    } catch (err: any) {
-      setError(err.message || 'Failed to release name');
-      console.error('Release error:', err);
-    }
-  };
-
   useEffect(() => {
-    if (account && REGISTRY_ADDRESS) {
-      loadMyNames();
-    }
-  }, [account, REGISTRY_ADDRESS]);
+    // Load registration fee when component mounts
+    const loadFee = async () => {
+      if (!REGISTRY_ADDRESS || !window.ethereum) return;
+      try {
+        const web3 = new Web3(window.ethereum);
+        const contract = new web3.eth.Contract(ArcNameRegistryV2Artifact.abi as any, REGISTRY_ADDRESS);
+        const fee = await contract.methods.registrationFee().call();
+        const feeInUsdc = web3.utils.fromWei(String(fee || '0'), 'ether');
+        setRegistrationFee(feeInUsdc);
+      } catch (err) {
+        console.error('Failed to load registration fee:', err);
+      }
+    };
+    loadFee();
+  }, [REGISTRY_ADDRESS]);
 
   // Validate input in real-time
   const handleNameInput = (value: string) => {
