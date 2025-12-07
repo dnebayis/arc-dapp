@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Web3 from 'web3';
-import ArcNameRegistryArtifact from '../contracts/ArcNameRegistry.json';
+import ArcNameRegistryV2Artifact from '../contracts/ArcNameRegistryV2.json';
 
 interface ArcNameRegistryV2Props {
   signer: any;
@@ -61,7 +61,7 @@ export function ArcNameRegistryV2({ signer }: ArcNameRegistryV2Props) {
 
     try {
       const web3 = new Web3(window.ethereum);
-      const contract = new web3.eth.Contract(ArcNameRegistryArtifact.abi as any, REGISTRY_ADDRESS);
+      const contract = new web3.eth.Contract(ArcNameRegistryV2Artifact.abi as any, REGISTRY_ADDRESS);
 
       const available = await contract.methods.isAvailable(searchName.toLowerCase()).call();
       setIsAvailable(Boolean(available));
@@ -86,7 +86,7 @@ export function ArcNameRegistryV2({ signer }: ArcNameRegistryV2Props) {
 
     try {
       const web3 = new Web3(window.ethereum);
-      const contract = new web3.eth.Contract(ArcNameRegistryArtifact.abi as any, REGISTRY_ADDRESS);
+      const contract = new web3.eth.Contract(ArcNameRegistryV2Artifact.abi as any, REGISTRY_ADDRESS);
 
       const fee = await contract.methods.registrationFee().call();
 
@@ -118,7 +118,7 @@ export function ArcNameRegistryV2({ signer }: ArcNameRegistryV2Props) {
       if (!REGISTRY_ADDRESS || !window.ethereum) return;
       try {
         const web3 = new Web3(window.ethereum);
-        const contract = new web3.eth.Contract(ArcNameRegistryArtifact.abi as any, REGISTRY_ADDRESS);
+        const contract = new web3.eth.Contract(ArcNameRegistryV2Artifact.abi as any, REGISTRY_ADDRESS);
         const fee = await contract.methods.registrationFee().call();
         const feeInUsdc = web3.utils.fromWei(String(fee || '0'), 'ether');
         setRegistrationFee(feeInUsdc);
