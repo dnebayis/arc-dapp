@@ -9,6 +9,10 @@ interface ArcNameRegistryV2Props {
 
 const REGISTRY_ADDRESS = import.meta.env.VITE_REGISTRY_ADDRESS || '0x7b08A2A0CE6BC1f4D325529aBf26E0A6Bc83dBff';
 
+// Debug: Log which address is being used
+console.log('🔍 Registry Address:', REGISTRY_ADDRESS);
+console.log('🔍 Env Variable:', import.meta.env.VITE_REGISTRY_ADDRESS);
+
 export function ArcNameRegistryV2({ signer }: ArcNameRegistryV2Props) {
   const [searchName, setSearchName] = useState('');
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
