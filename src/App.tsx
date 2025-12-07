@@ -8,6 +8,7 @@ import { USDCTransfer } from './components/USDCTransfer';
 import { TransactionHistory } from './components/TransactionHistory';
 import { NetworkStatus } from './components/NetworkStatus';
 import arcLogo from './assets/arc-logo.svg'
+import { ARC_TESTNET } from './config/index'
 import '@rainbow-me/rainbowkit/styles.css'
 import './App.css'
 
@@ -16,6 +17,19 @@ const queryClient = new QueryClient()
 function AppContent() {
   const { address, isConnected } = useAccount()
   const [activeTab, setActiveTab] = useState<'home' | 'deploy' | 'transfer' | 'history'>('home');
+
+  const addArcNetwork = async () => {
+    try {
+      const eth = (window as any).ethereum;
+      if (!eth) return;
+      await eth.request({
+        method: 'wallet_addEthereumChain',
+        params: [ARC_TESTNET],
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  }
 
   return (
     <div className="app">
@@ -29,6 +43,12 @@ function AppContent() {
             <p className="tagline">Your Gateway to ARC Network</p>
           </div>
           <div className="header-right">
+            <button 
+              onClick={addArcNetwork}
+              className="faucet-link"
+            >
+              ＋ Add Arc Network
+            </button>
             <a 
               href="https://faucet.circle.com/" 
               target="_blank" 

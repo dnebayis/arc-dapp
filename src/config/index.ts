@@ -1,6 +1,6 @@
 // ARC Testnet Configuration
 export const ARC_TESTNET = {
-  chainId: '0x4D8A52',
+  chainId: '0x4CF852',
   chainName: 'ARC Testnet',
   nativeCurrency: {
     name: 'USDC',

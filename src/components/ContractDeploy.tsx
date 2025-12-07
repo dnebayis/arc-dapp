@@ -78,6 +78,8 @@ export function ContractDeploy({ signer }: ContractDeployProps) {
         ) : '⚙ Deploy Contract'}
       </button>
 
+      
+
       {deployedAddress && (
         <div className="success-message">
           <p>✓ Contract deployed successfully!</p>

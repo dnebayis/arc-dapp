@@ -158,40 +158,40 @@ export function USDCTransfer({ signer, account }: USDCTransferProps) {
   return (
     <div className="card">
       <h2>↗ Transfer Tokens</h2>
+      <div className="balance-list">
+        <div className="balance-item native">
+          <div className="balance-header">
+            <span className="token-symbol">USDC</span>
+          </div>
+          <div className="balance-amount">{parseFloat(usdcBalance).toFixed(4)}</div>
+        </div>
+        <div className="balance-item">
+          <div className="balance-header">
+            <span className="token-symbol">EURC</span>
+            <a
+              href={`https://testnet.arcscan.app/address/${EURC_ADDRESS}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="token-address-short"
+            >
+              {EURC_ADDRESS.slice(0, 6)}...{EURC_ADDRESS.slice(-4)}
+            </a>
+          </div>
+          <div className="balance-amount">{parseFloat(eurcBalance).toFixed(4)}</div>
+        </div>
+      </div>
       
       {/* Token Selector */}
       <div className="token-selector" style={{ marginBottom: '1rem' }}>
         <button
           className={`token-tab ${selectedToken === 'USDC' ? 'active' : ''}`}
           onClick={() => setSelectedToken('USDC')}
-          style={{
-            flex: 1,
-            padding: '0.75rem',
-            background: selectedToken === 'USDC' ? 'linear-gradient(135deg, var(--primary), var(--primary-dark))' : 'rgba(255, 255, 255, 0.05)',
-            border: selectedToken === 'USDC' ? '1px solid var(--primary)' : '1px solid var(--border)',
-            borderRadius: '10px 0 0 10px',
-            color: 'white',
-            fontWeight: 600,
-            cursor: 'pointer',
-            transition: 'all 0.3s ease'
-          }}
         >
           💵 USDC
         </button>
         <button
           className={`token-tab ${selectedToken === 'EURC' ? 'active' : ''}`}
           onClick={() => setSelectedToken('EURC')}
-          style={{
-            flex: 1,
-            padding: '0.75rem',
-            background: selectedToken === 'EURC' ? 'linear-gradient(135deg, var(--primary), var(--primary-dark))' : 'rgba(255, 255, 255, 0.05)',
-            border: selectedToken === 'EURC' ? '1px solid var(--primary)' : '1px solid var(--border)',
-            borderRadius: '0 10px 10px 0',
-            color: 'white',
-            fontWeight: 600,
-            cursor: 'pointer',
-            transition: 'all 0.3s ease'
-          }}
         >
           💶 EURC
         </button>

@@ -9,6 +9,7 @@ export function NetworkStatus({ provider }: NetworkStatusProps) {
   const [blockNumber, setBlockNumber] = useState<number>(0);
   const [blockTime, setBlockTime] = useState<number>(0);
   const [gasPrice, setGasPrice] = useState<string>('0');
+  const [baseFeeGwei, setBaseFeeGwei] = useState<string>('0');
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
@@ -34,7 +35,9 @@ export function NetworkStatus({ provider }: NetworkStatusProps) {
       // Get current gas price
       const currentGasPrice = await web3.eth.getGasPrice();
       const gasPriceUsdc = web3.utils.fromWei(currentGasPrice, 'ether');
+      const baseGwei = web3.utils.fromWei(currentGasPrice, 'gwei');
       setGasPrice(gasPriceUsdc);
+      setBaseFeeGwei(baseGwei);
 
       // Check connection
       const connected = await web3.eth.net.isListening();
@@ -79,8 +82,10 @@ export function NetworkStatus({ provider }: NetworkStatusProps) {
         <div className="status-item">
           <div className="status-icon">◈</div>
           <div className="status-info">
-            <span className="status-label">Gas Price</span>
-            <span className="status-value">${parseFloat(gasPrice).toFixed(6)}</span>
+            <span className="status-label">Base Fee</span>
+            <span className="status-value">{parseFloat(baseFeeGwei).toFixed(0)} gwei</span>
+            <span className="status-label">Per Gas (USDC)</span>
+            <span className="status-value">{parseFloat(gasPrice).toFixed(8)} USDC</span>
           </div>
         </div>
 

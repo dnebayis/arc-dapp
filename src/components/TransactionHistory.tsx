@@ -147,8 +147,14 @@ export function TransactionHistory({ account, provider }: TransactionHistoryProp
                     {tx.status ? '✓ Success' : '✕ Failed'}
                   </span>
                   <div className="tx-info">
-                    <div className="tx-addresses">
+                    <div className="tx-type-row">
+                      <span className="tx-type-badge">{tx.type}</span>
                       <span className="tx-value-large">{parseFloat(tx.value).toFixed(4)} USDC</span>
+                    </div>
+                    <div className="tx-addresses">
+                      <span className="tx-direction">{tx.from.slice(0, 6)}...{tx.from.slice(-4)}</span>
+                      <span className="tx-direction">→</span>
+                      <span className="tx-direction">{tx.to === 'Contract Creation' ? 'Contract Creation' : `${tx.to.slice(0, 6)}...${tx.to.slice(-4)}`}</span>
                     </div>
                     <div className="tx-time-small">{new Date(tx.timestamp * 1000).toLocaleString()}</div>
                   </div>
