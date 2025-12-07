@@ -36,10 +36,25 @@ export default function ArcDomainsPro({ account }: Props) {
         activeContract = new fweb3.eth.Contract((ArcRegistryAbi as any).abi, registryAddress)
       }
 
+      try {
+        const cid = Number(await activeWeb3.eth.getChainId())
+        if (cid !== 5042002) {
+          const fweb3 = new Web3(new Web3.providers.HttpProvider(fallbackRpc)) as any
+          activeWeb3 = fweb3
+          activeContract = new fweb3.eth.Contract((ArcRegistryAbi as any).abi, registryAddress)
+        }
+      } catch { void 0 }
+
+      const code = await activeWeb3.eth.getCode(registryAddress)
+      if (!code || code === '0x') {
+        throw new Error('Registry address not deployed on this network')
+      }
+
       const latestBlock = Number(await activeWeb3.eth.getBlockNumber())
       const maxLookback = Number((import.meta as any).env?.VITE_LOGS_LOOKBACK_BLOCKS || 50000)
       const chunkSize = Number((import.meta as any).env?.VITE_LOGS_CHUNK_SIZE || 9000)
-      const startBlock = Math.max(0, latestBlock - maxLookback)
+      const deployBlock = Number((import.meta as any).env?.VITE_REGISTRY_DEPLOY_BLOCK || 0)
+      const startBlock = deployBlock > 0 ? deployBlock : Math.max(0, latestBlock - maxLookback)
 
       let events: any[] = []
       for (let from = startBlock; from <= latestBlock; from += chunkSize) {

@@ -34,6 +34,18 @@ export default function ArcDomains({ account }: Props) {
     setError(null)
     setSuccess(null)
     try {
+      try {
+        const cid = Number(await web3.eth.getChainId())
+        if (cid !== 5042002) {
+          throw new Error('Wrong network')
+        }
+      } catch { void 0 }
+
+      const code = await web3.eth.getCode(registryAddress)
+      if (!code || code === '0x') {
+        throw new Error('Registry address not deployed on this network')
+      }
+
       const o = await contract.methods.owners(node).call()
       setOwner(o)
       const isAvail = o === '0x0000000000000000000000000000000000000000'
