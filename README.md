@@ -142,9 +142,17 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [x] Contract deployment
 - [x] USDC transfers
 - [x] Transaction history
-- [ ] Subdomain support
-- [ ] Commit–reveal registration
-- [ ] Name marketplace
+- [x] Arc Domains MVP (registry + simple UI)
+- [x] USDC-native deploy script with gas estimation
+- [ ] Domain record management UI (addr/text)
+- [ ] Commit–reveal registration flow
+- [ ] Pricing, expiry, and renewals
+- [ ] Subdomain support (`sub.alice.arc`)
+- [ ] Resolver integration and richer records
+- [ ] Domain search and profile pages
+- [ ] Unit/integration tests and CI
+- [ ] Contract verification tooling
+- [ ] Bundle size optimization and code splitting
 - [ ] Multi-chain support
 
 ---
