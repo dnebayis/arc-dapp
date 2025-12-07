@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Web3 from 'web3';
 import SimpleStorageArtifact from '../contracts/SimpleStorage.json';
+import { ARC_TESTNET } from '../config/index';
 
 interface ContractDeployProps {
   signer: any;
@@ -25,6 +26,23 @@ export function ContractDeploy({ signer }: ContractDeployProps) {
 
     try {
       const web3 = new Web3(window.ethereum);
+      const eth = (window as any).ethereum;
+
+      try {
+        const cid = Number(await web3.eth.getChainId());
+        if (cid !== 5042002 && eth?.request) {
+          await eth.request({ method: 'wallet_addEthereumChain', params: [ARC_TESTNET] });
+        }
+      } catch { void 0 }
+
+      try {
+        const bal = await web3.eth.getBalance(signer);
+        const hasBal = ((typeof bal === 'bigint') ? bal : BigInt(bal)) > 0n;
+        if (!hasBal) {
+          setError('Insufficient native balance (USDC). Use the testnet faucet.');
+          return;
+        }
+      } catch { void 0 }
       
       const artifact = SimpleStorageArtifact;
       const contract = new web3.eth.Contract(artifact.abi as any);
@@ -47,14 +65,21 @@ export function ContractDeploy({ signer }: ContractDeployProps) {
       });
 
       const address = deployedContract.options.address;
-      const txHash = deployedContract.options.address;
+      const txHash = (deployedContract as any)?.transactionHash || null;
 
       setDeployedAddress(address!);
       setTxHash(txHash!);
       
       console.log('SimpleStorage deployed to:', address);
     } catch (err: any) {
-      setError(err.message || 'Deployment failed');
+      const msg = String(err?.message || '').toLowerCase();
+      if (msg.includes('internal json-rpc error')) {
+        setError('RPC error. Ensure you are on Arc Testnet and have testnet USDC.');
+      } else if (msg.includes('user rejected')) {
+        setError('Transaction rejected in wallet');
+      } else {
+        setError(err.message || 'Deployment failed');
+      }
       console.error('Deployment error:', err);
     } finally {
       setDeploying(false);
