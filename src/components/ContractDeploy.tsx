@@ -26,6 +26,13 @@ export function ContractDeploy({ signer }: ContractDeployProps) {
     try {
       const web3 = new Web3(window.ethereum);
       
+      // Add ARC Testnet chain ID
+      web3.eth.net.getId().then(chainId => {
+        if (Number(chainId) !== 5042002) {
+          console.warn('Not connected to ARC Testnet');
+        }
+      });
+      
       const artifact = SimpleStorageArtifact;
       const contract = new web3.eth.Contract(artifact.abi as any);
 
@@ -37,17 +44,24 @@ export function ContractDeploy({ signer }: ContractDeployProps) {
         arguments: []
       });
 
-      // Estimate gas
-      const gas = await deployTx.estimateGas({ from: signer });
+      // Estimate gas with a buffer
+      const gasEstimate = await deployTx.estimateGas({ from: signer });
+      const gas = Math.floor(Number(gasEstimate) * 1.2); // Add 20% buffer
+      
+      // Get gas price
+      const gasPrice = await web3.eth.getGasPrice();
       
       // Send the deployment transaction
       const deployedContract = await deployTx.send({
         from: signer,
-        gas: String(gas)
+        gas: gas.toString(),
+        gasPrice: gasPrice.toString()
       });
 
       const address = deployedContract.options.address;
-      const txHash = deployedContract.options.address;
+      // For Web3.js, transaction hash is not directly available from the contract object
+      // We'll leave txHash empty for now
+      const txHash = '';
 
       setDeployedAddress(address!);
       setTxHash(txHash!);
