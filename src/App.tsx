@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { WagmiProvider, useAccount } from 'wagmi'
+import { WagmiProvider, useAccount, useSwitchChain } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RainbowKitProvider, ConnectButton } from '@rainbow-me/rainbowkit'
 import { config } from './config/wagmi'
@@ -11,6 +11,7 @@ import ArcDomains from './components/ArcDomains';
 import ArcDomainsPro from './components/ArcDomainsPro';
 import arcLogo from './assets/arc-logo.svg'
 import { ARC_TESTNET } from './config/index'
+import { arcTestnet } from './config/wagmi'
 import '@rainbow-me/rainbowkit/styles.css'
 import './App.css'
 
@@ -19,17 +20,24 @@ const queryClient = new QueryClient()
 function AppContent() {
   const { address, isConnected } = useAccount()
   const [activeTab, setActiveTab] = useState<'home' | 'deploy' | 'transfer' | 'history' | 'domains' | 'domainsPro'>('home');
+  const [networkAddFailed, setNetworkAddFailed] = useState(false)
+  const { switchChain } = useSwitchChain()
 
   const addArcNetwork = async () => {
     try {
-      const eth = (window as any).ethereum;
-      if (!eth) return;
-      await eth.request({
-        method: 'wallet_addEthereumChain',
-        params: [ARC_TESTNET],
-      });
-    } catch (e) {
-      console.error(e);
+      await switchChain({ chainId: arcTestnet.id })
+      setNetworkAddFailed(false)
+      return
+    } catch {
+      try {
+        const eth = (window as any).ethereum
+        if (!eth) throw new Error('no provider')
+        await eth.request({ method: 'wallet_addEthereumChain', params: [ARC_TESTNET] })
+        setNetworkAddFailed(false)
+        return
+      } catch {
+        setNetworkAddFailed(true)
+      }
     }
   }
 
@@ -65,6 +73,18 @@ function AppContent() {
       </header>
 
       <main className="app-main">
+        {networkAddFailed && (
+          <div className="info-box">
+            <p>Unable to add network automatically. Add it manually in your wallet:</p>
+            <ul>
+              <li>Name: Arc Network Testnet</li>
+              <li>RPC: <code>https://rpc.testnet.arc.network</code></li>
+              <li>Chain ID: <code>5042002</code></li>
+              <li>Currency: <code>USDC</code></li>
+              <li>Explorer: <a href="https://testnet.arcscan.app" target="_blank" rel="noopener noreferrer">https://testnet.arcscan.app</a></li>
+            </ul>
+          </div>
+        )}
         {!isConnected ? (
           <div className="welcome-section">
             <div className="welcome-hero">
