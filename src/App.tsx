@@ -1,22 +1,22 @@
 import { useState } from 'react'
-import { WalletConnect } from './components/WalletConnect';
+import { WagmiProvider, useAccount } from 'wagmi'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { RainbowKitProvider, ConnectButton } from '@rainbow-me/rainbowkit'
+import { config } from './config/wagmi'
 import { ContractDeploy } from './components/ContractDeploy';
 import { USDCTransfer } from './components/USDCTransfer';
 import { TransactionHistory } from './components/TransactionHistory';
 import { NetworkStatus } from './components/NetworkStatus';
 import { ArcNameRegistryV2 } from './components/ArcNameRegistryV2';
 import arcLogo from './assets/arc-logo.svg'
+import '@rainbow-me/rainbowkit/styles.css'
 import './App.css'
 
-function App() {
-  const [account, setAccount] = useState<string | null>(null);
-  const [signer, setSigner] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'home' | 'deploy' | 'transfer' | 'history' | 'registry'>('home');
+const queryClient = new QueryClient()
 
-  const handleWalletConnect = (state: any) => {
-    setAccount(state.account);
-    setSigner(state.signer);
-  };
+function AppContent() {
+  const { address, isConnected } = useAccount()
+  const [activeTab, setActiveTab] = useState<'home' | 'deploy' | 'transfer' | 'history' | 'registry'>('home');
 
   return (
     <div className="app">
@@ -30,23 +30,21 @@ function App() {
             <p className="tagline">Your Gateway to ARC Network</p>
           </div>
           <div className="header-right">
-            {account && (
-              <a 
-                href="https://faucet.circle.com/" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="faucet-link"
-              >
-                ◉ Get Testnet USDC
-              </a>
-            )}
-            <WalletConnect onConnect={handleWalletConnect} />
+            <a 
+              href="https://faucet.circle.com/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="faucet-link"
+            >
+              ◉ Get Testnet USDC
+            </a>
+            <ConnectButton />
           </div>
         </div>
       </header>
 
       <main className="app-main">
-        {!account ? (
+        {!isConnected ? (
           <div className="welcome-section">
             <div className="welcome-hero">
               <div className="hero-content">
@@ -131,25 +129,25 @@ function App() {
 
               {activeTab === 'deploy' && (
                 <div className="single-view">
-                  <ContractDeploy signer={signer} />
+                  <ContractDeploy signer={address || null} />
                 </div>
               )}
 
               {activeTab === 'transfer' && (
                 <div className="single-view">
-                  <USDCTransfer signer={signer} account={account} />
+                  <USDCTransfer signer={address || null} account={address || null} />
                 </div>
               )}
 
               {activeTab === 'history' && (
                 <div className="single-view">
-                  <TransactionHistory account={account} provider={window.ethereum} />
+                  <TransactionHistory account={address || null} provider={window.ethereum} />
                 </div>
               )}
 
               {activeTab === 'registry' && (
                 <div className="single-view">
-                  <ArcNameRegistryV2 signer={signer} account={account} />
+                  <ArcNameRegistryV2 signer={address || null} account={address || null} />
                 </div>
               )}
             </div>
@@ -163,6 +161,18 @@ function App() {
         </p>
       </footer>
     </div>
+  )
+}
+
+function App() {
+  return (
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        <RainbowKitProvider>
+          <AppContent />
+        </RainbowKitProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
   )
 }
 
