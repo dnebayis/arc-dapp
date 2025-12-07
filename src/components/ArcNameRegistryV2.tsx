@@ -7,11 +7,8 @@ interface ArcNameRegistryV2Props {
   account: string | null;
 }
 
-const REGISTRY_ADDRESS = import.meta.env.VITE_REGISTRY_ADDRESS || '0x7b08A2A0CE6BC1f4D325529aBf26E0A6Bc83dBff';
-
-// Debug: Log which address is being used
-console.log('🔍 Registry Address:', REGISTRY_ADDRESS);
-console.log('🔍 Env Variable:', import.meta.env.VITE_REGISTRY_ADDRESS);
+// ARC Name Registry V2 Contract Address (deployed on ARC Testnet)
+const REGISTRY_ADDRESS = '0x7b08A2A0CE6BC1f4D325529aBf26E0A6Bc83dBff';
 
 export function ArcNameRegistryV2({ signer }: ArcNameRegistryV2Props) {
   const [searchName, setSearchName] = useState('');

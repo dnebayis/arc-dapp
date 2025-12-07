@@ -9,7 +9,8 @@ interface USDCTransferProps {
 
 // EURC is an ERC20 token on ARC Network
 const EURC_ADDRESS = '0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a';
-const REGISTRY_ADDRESS = import.meta.env.VITE_REGISTRY_ADDRESS || '';
+// ARC Name Registry V2 Contract Address
+const REGISTRY_ADDRESS = '0x7b08A2A0CE6BC1f4D325529aBf26E0A6Bc83dBff';
 
 const ERC20_ABI = [
   {
