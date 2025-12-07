@@ -1,0 +1,331 @@
+import { useState, useEffect } from 'react';
+import Web3 from 'web3';
+import ArcNameRegistryArtifact from '../contracts/ArcNameRegistry.json';
+
+interface USDCTransferProps {
+  signer: any;
+  account: string | null;
+}
+
+// EURC is an ERC20 token on ARC Network
+const EURC_ADDRESS = '0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a';
+const REGISTRY_ADDRESS = import.meta.env.VITE_REGISTRY_ADDRESS || '';
+
+const ERC20_ABI = [
+  {
+    "constant": false,
+    "inputs": [
+      {"name": "to", "type": "address"},
+      {"name": "amount", "type": "uint256"}
+    ],
+    "name": "transfer",
+    "outputs": [{"name": "", "type": "bool"}],
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [{"name": "account", "type": "address"}],
+    "name": "balanceOf",
+    "outputs": [{"name": "", "type": "uint256"}],
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "decimals",
+    "outputs": [{"name": "", "type": "uint8"}],
+    "type": "function"
+  }
+];
+
+export function USDCTransfer({ signer, account }: USDCTransferProps) {
+  const [recipient, setRecipient] = useState('');
+  const [amount, setAmount] = useState('');
+  const [sending, setSending] = useState(false);
+  const [txHash, setTxHash] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [usdcBalance, setUsdcBalance] = useState<string>('0');
+  const [eurcBalance, setEurcBalance] = useState<string>('0');
+  const [selectedToken, setSelectedToken] = useState<'USDC' | 'EURC'>('USDC');
+  const [resolvedAddress, setResolvedAddress] = useState<string>('');
+  const [resolving, setResolving] = useState(false);
+
+  // Load balances when component mounts or account changes
+  const loadBalances = async () => {
+    if (!account || !window.ethereum) return;
+    
+    try {
+      const web3 = new Web3(window.ethereum);
+      
+      // Load USDC balance (native currency)
+      const usdcBalanceWei = await web3.eth.getBalance(account);
+      const usdcBal = web3.utils.fromWei(usdcBalanceWei, 'ether');
+      setUsdcBalance(usdcBal);
+      
+      // Load EURC balance (ERC20 token)
+      const eurcContract = new web3.eth.Contract(ERC20_ABI, EURC_ADDRESS);
+      const eurcBalanceRaw = await eurcContract.methods.balanceOf(account).call();
+      // EURC uses 6 decimals
+      const eurcBal = (Number(eurcBalanceRaw) / 1e6).toString();
+      setEurcBalance(eurcBal);
+    } catch (err) {
+      console.error('Failed to load balances:', err);
+    }
+  };
+
+  // Load balances on mount and when account changes
+  useEffect(() => {
+    loadBalances();
+  }, [account]);
+
+  // Resolve .arc names to addresses
+  const resolveRecipient = async (input: string): Promise<string> => {
+    if (!input) return '';
+
+    // Check if input ends with .arc
+    if (input.toLowerCase().endsWith('.arc') && REGISTRY_ADDRESS) {
+      setResolving(true);
+      try {
+        const web3 = new Web3(window.ethereum);
+        const contract = new web3.eth.Contract(ArcNameRegistryArtifact.abi as any, REGISTRY_ADDRESS);
+        
+        const name = input.toLowerCase().replace('.arc', '');
+        const address = await contract.methods.resolve(name).call();
+        const resolvedAddr = String(address || '');
+        
+        if (resolvedAddr === '0x0000000000000000000000000000000000000000' || !resolvedAddr) {
+          throw new Error('Name not registered');
+        }
+        
+        setResolvedAddress(resolvedAddr);
+        setResolving(false);
+        return resolvedAddr;
+      } catch (err) {
+        setResolving(false);
+        throw new Error('Failed to resolve .arc name');
+      }
+    }
+    
+    // Otherwise, treat as regular address
+    setResolvedAddress('');
+    return input;
+  };
+
+  // Handle recipient input change
+  const handleRecipientChange = async (value: string) => {
+    setRecipient(value);
+    setError(null);
+    
+    if (value.toLowerCase().endsWith('.arc')) {
+      try {
+        await resolveRecipient(value);
+      } catch (err: any) {
+        setError(err.message);
+      }
+    } else {
+      setResolvedAddress('');
+    }
+  };
+
+  const sendToken = async () => {
+    if (!signer || !recipient || !amount || !window.ethereum) {
+      setError('Please fill in all fields');
+      return;
+    }
+
+    const web3 = new Web3(window.ethereum);
+    
+    // Resolve recipient (handles both .arc names and addresses)
+    let finalRecipient: string;
+    try {
+      finalRecipient = await resolveRecipient(recipient);
+    } catch (err: any) {
+      setError(err.message || 'Invalid recipient');
+      return;
+    }
+    
+    if (!web3.utils.isAddress(finalRecipient)) {
+      setError('Invalid recipient address');
+      return;
+    }
+
+    // Check if user is trying to send too much
+    const amountNum = parseFloat(amount);
+    const balance = selectedToken === 'USDC' ? parseFloat(usdcBalance) : parseFloat(eurcBalance);
+    
+    if (amountNum > balance) {
+      setError(`Insufficient ${selectedToken} balance`);
+      return;
+    }
+
+    // For USDC, also check gas fees
+    if (selectedToken === 'USDC') {
+      if (amountNum >= balance) {
+        setError('Amount must be less than your balance to leave room for gas fees (~0.01 USDC)');
+        return;
+      }
+      if (balance - amountNum < 0.02) {
+        setError('Please leave at least 0.02 USDC in your wallet for gas fees');
+        return;
+      }
+    }
+
+    setSending(true);
+    setError(null);
+    setTxHash(null);
+
+    try {
+      if (selectedToken === 'USDC') {
+        // USDC: Send as native currency (18 decimals)
+        const amountInWei = web3.utils.toWei(amount, 'ether');
+        
+        const receipt = await web3.eth.sendTransaction({
+          from: signer,
+          to: finalRecipient,
+          value: amountInWei
+        });
+        
+        setTxHash(receipt.transactionHash as string);
+      } else {
+        // EURC: Send as ERC20 token (6 decimals)
+        const eurcContract = new web3.eth.Contract(ERC20_ABI, EURC_ADDRESS);
+        const amountWithDecimals = Math.floor(parseFloat(amount) * 1e6).toString();
+        
+        const receipt = await eurcContract.methods.transfer(finalRecipient, amountWithDecimals).send({
+          from: signer
+        });
+        
+        setTxHash(receipt.transactionHash as string);
+      }
+
+      setRecipient('');
+      setAmount('');
+      loadBalances(); // Reload balances after transfer
+      
+      console.log(`${selectedToken} sent successfully!`);
+    } catch (err: any) {
+      setError(err.message || 'Transfer failed');
+      console.error('Transfer error:', err);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="card">
+      <h2>↗ Transfer Tokens</h2>
+      
+      {/* Token Selector */}
+      <div className="token-selector" style={{ marginBottom: '1rem' }}>
+        <button
+          className={`token-tab ${selectedToken === 'USDC' ? 'active' : ''}`}
+          onClick={() => setSelectedToken('USDC')}
+          style={{
+            flex: 1,
+            padding: '0.75rem',
+            background: selectedToken === 'USDC' ? 'linear-gradient(135deg, var(--primary), var(--primary-dark))' : 'rgba(255, 255, 255, 0.05)',
+            border: selectedToken === 'USDC' ? '1px solid var(--primary)' : '1px solid var(--border)',
+            borderRadius: '10px 0 0 10px',
+            color: 'white',
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.3s ease'
+          }}
+        >
+          💵 USDC
+        </button>
+        <button
+          className={`token-tab ${selectedToken === 'EURC' ? 'active' : ''}`}
+          onClick={() => setSelectedToken('EURC')}
+          style={{
+            flex: 1,
+            padding: '0.75rem',
+            background: selectedToken === 'EURC' ? 'linear-gradient(135deg, var(--primary), var(--primary-dark))' : 'rgba(255, 255, 255, 0.05)',
+            border: selectedToken === 'EURC' ? '1px solid var(--primary)' : '1px solid var(--border)',
+            borderRadius: '0 10px 10px 0',
+            color: 'white',
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.3s ease'
+          }}
+        >
+          💶 EURC
+        </button>
+      </div>
+      
+      <div className="input-group">
+        <label>Recipient Address or .arc Name:</label>
+        <input
+          type="text"
+          value={recipient}
+          onChange={(e) => handleRecipientChange(e.target.value)}
+          placeholder="0x... or username.arc"
+          className="input-field"
+        />
+        {resolving && (
+          <small style={{ display: 'block', marginTop: '0.5rem', color: 'var(--text-secondary)' }}>
+            Resolving .arc name...
+          </small>
+        )}
+        {resolvedAddress && (
+          <small style={{ display: 'block', marginTop: '0.5rem', color: 'var(--success)' }}>
+            ✓ Resolves to: {resolvedAddress.slice(0, 6)}...{resolvedAddress.slice(-4)}
+          </small>
+        )}
+      </div>
+
+      <div className="input-group">
+        <label>Amount ({selectedToken}):</label>
+        <input
+          type="number"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          placeholder="0.00"
+          step="0.01"
+          min="0"
+          className="input-field"
+        />
+      </div>
+
+      <button 
+        onClick={sendToken} 
+        disabled={!signer || sending || !recipient || !amount}
+        className="action-button"
+      >
+        {sending ? (
+          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+            <span className="loading-spinner"></span>
+            Sending...
+          </span>
+        ) : `↗ Send ${selectedToken}`}
+      </button>
+
+      {txHash && (
+        <div className="success-message">
+          <p>✓ Transfer successful!</p>
+          <div className="contract-info">
+            <strong>TX Hash:</strong>
+            <code className="tx-hash">{txHash.slice(0, 10)}...{txHash.slice(-8)}</code>
+            <a 
+              href={`https://testnet.arcscan.app/tx/${txHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="explorer-link"
+            >
+              View on Explorer
+            </a>
+          </div>
+        </div>
+      )}
+
+      {error && <div className="error-message">{error}</div>}
+
+      <div className="info-box">
+        <p><strong>◈ Tips:</strong></p>
+        <ul>
+          <li>Get testnet tokens from <a href="https://faucet.circle.com/" target="_blank" rel="noopener noreferrer">Circle Faucet</a></li>
+        </ul>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,74 @@
+{
+  "abi": [
+    {
+      "inputs": [],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {"indexed": false, "internalType": "string", "name": "newText", "type": "string"},
+        {"indexed": false, "internalType": "address", "name": "updatedBy", "type": "address"}
+      ],
+      "name": "TextUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {"indexed": false, "internalType": "uint256", "name": "newValue", "type": "uint256"},
+        {"indexed": false, "internalType": "address", "name": "updatedBy", "type": "address"}
+      ],
+      "name": "ValueUpdated",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "getInfo",
+      "outputs": [
+        {"internalType": "address", "name": "", "type": "address"},
+        {"internalType": "uint256", "name": "", "type": "uint256"},
+        {"internalType": "string", "name": "", "type": "string"}
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [{"internalType": "string", "name": "_text", "type": "string"}],
+      "name": "setText",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [{"internalType": "uint256", "name": "_value", "type": "uint256"}],
+      "name": "setValue",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "text",
+      "outputs": [{"internalType": "string", "name": "", "type": "string"}],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "value",
+      "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x608060405234801561000f575f80fd5b50335f806101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff16021790555061066b8061005d5f395ff3fe608060405234801561000f575f80fd5b5060043610610060575f3560e01c80633fa4f2451461006457806355241077146100825780635a9b0b891461009e5780638d977672146100bc5780638da5cb5b146100d8578063f4959b56146100f6575b5f80fd5b61006c610114565b604051610079919061037d565b60405180910390f35b61009c600480360381019061009791906103de565b61011a565b005b6100a66101a5565b6040516100b39190610459565b60405180910390f35b6100d660048036038101906100d191906104a9565b610230565b005b6100e06102bb565b6040516100ed91906104f4565b60405180910390f35b6100fe6102de565b60405161010b919061059a565b60405180910390f35b60015481565b8060018190555033847f8e8e6d90e2f6c5c8f7b76c51c3b3b16e7b8b3c8b7b8b3c8b7b8b3c8b7b8b3c8b7b8260405161014e9291906105ba565b60405180910390a3505056fea2646970667358221220a1b2c3d4e5f6071829384950617273848594a5b6c7d8e9f0011223344556677664736f6c63430008150033"
+}
